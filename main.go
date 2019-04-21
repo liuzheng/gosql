@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -79,6 +80,7 @@ func GetAllFiles(dirPath string) (files []string) {
 	return files
 }
 func ReadGOFile(gofile string) (DB []Table) {
+	aA_Compile, _ := regexp.Compile("([a-z])([A-Z])")
 
 	content, err := ioutil.ReadFile(gofile)
 	if err != nil {
@@ -105,7 +107,7 @@ func ReadGOFile(gofile string) (DB []Table) {
 					if list.Tag != nil {
 						//ast.Print(fset, list)
 						colume := Colume{
-							Name: list.Names[0].Name,
+							Name: strings.ToLower(aA_Compile.ReplaceAllString(list.Names[0].Name, "${1}_${2}")),
 						}
 						tag := strings.Replace(list.Tag.Value, "`", "", -1)
 						if s := reflect.StructTag(tag).Get("mysql"); s != "" {
