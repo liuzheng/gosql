@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -18,13 +19,14 @@ var (
 )
 
 type Colume struct {
-	Name string
-	Type string
+	Name  string
+	Mysql string
 }
 type Table struct {
-	Name   string
-	Colume []Colume
+	Name     string
+	Colume   []Colume
 }
+
 func main() {
 	flag.Parse()
 	if *makemigrations != "" {
@@ -37,8 +39,8 @@ func main() {
 		for _, gofile := range GetAllFiles(*makemigrations) {
 			db := ReadGOFile(gofile)
 			fmt.Println(db)
-			if len(db)==0{
-				fmt.Println(gofile)
+			if len(db) == 0 {
+				//fmt.Println(gofile)
 			}
 		}
 
@@ -76,6 +78,7 @@ func GetAllFiles(dirPath string) (files []string) {
 	return files
 }
 func ReadGOFile(gofile string) (DB []Table) {
+
 	content, err := ioutil.ReadFile(gofile)
 	if err != nil {
 		log.Fatal(err)
@@ -93,18 +96,23 @@ func ReadGOFile(gofile string) (DB []Table) {
 			for _, Specs := range GenDecl.Specs {
 				//fmt.Println(Specs.(*ast.TypeSpec).Name.Name)
 				table := Table{
-					Name:   Specs.(*ast.TypeSpec).Name.Name,
-					Colume: []Colume{},
+					Name:     Specs.(*ast.TypeSpec).Name.Name,
+					Colume:   []Colume{},
 				}
 				for _, list := range Specs.(*ast.TypeSpec).Type.(*ast.StructType).Fields.List {
 					//ast.Print(fset, list)
 					if list.Tag != nil {
 						//ast.Print(fset, list)
-						table.Colume = append(table.Colume,
-							Colume{
-								Name: list.Names[0].Name,
-								Type: list.Tag.Value,
-							})
+						colume := Colume{
+							Name: list.Names[0].Name,
+						}
+						tag := strings.Replace(list.Tag.Value, "`", "", -1)
+						if s := reflect.StructTag(tag).Get("mysql"); s != "" {
+							colume.Mysql = s
+						}
+						// Todo: not only mysql
+						table.Colume = append(table.Colume, colume)
+						//fmt.Println(reflect.StructTag(strings.Replace(list.Tag.Value, "`", "", -1)).Get("mysql"))
 						//fmt.Println(list.Names[0].Name)
 						//fmt.Println(list.Tag.Value)
 					}
