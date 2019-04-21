@@ -19,12 +19,13 @@ var (
 )
 
 type Colume struct {
-	Name  string
-	Mysql string
+	Name       string
+	Mysql      string
+	PrimaryKey bool
 }
 type Table struct {
-	Name     string
-	Colume   []Colume
+	Name   string
+	Colume []Colume
 }
 
 func main() {
@@ -96,8 +97,8 @@ func ReadGOFile(gofile string) (DB []Table) {
 			for _, Specs := range GenDecl.Specs {
 				//fmt.Println(Specs.(*ast.TypeSpec).Name.Name)
 				table := Table{
-					Name:     Specs.(*ast.TypeSpec).Name.Name,
-					Colume:   []Colume{},
+					Name:   Specs.(*ast.TypeSpec).Name.Name,
+					Colume: []Colume{},
 				}
 				for _, list := range Specs.(*ast.TypeSpec).Type.(*ast.StructType).Fields.List {
 					//ast.Print(fset, list)
@@ -108,7 +109,15 @@ func ReadGOFile(gofile string) (DB []Table) {
 						}
 						tag := strings.Replace(list.Tag.Value, "`", "", -1)
 						if s := reflect.StructTag(tag).Get("mysql"); s != "" {
-							colume.Mysql = s
+							// e.g.: 	id         uint16    `mysql:"SMALLINT,NOT_NULL,AUTO_INCREMENT,PRIMARY_KEY"`
+							// Todo: define the sql with golang type not in the tag, like django. e.g.: if `id` is uint16,
+							//  so the will be `smallint` in mysql, no need to add it in tag
+							if strings.Contains(s, "PRIMARY_KEY") {
+								colume.PrimaryKey = true
+								s = strings.Replace(s, ",PRIMARY_KEY", "", -1)
+							}
+							s = strings.Replace(s, "_", " ", -1)
+							colume.Mysql = strings.Replace(s, ",", " ", -1)
 						}
 						// Todo: not only mysql
 						table.Colume = append(table.Colume, colume)
