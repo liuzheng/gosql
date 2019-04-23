@@ -21,6 +21,7 @@ var (
 
 type Colume struct {
 	Name       string
+	Tag        string
 	Mysql      string
 	PrimaryKey bool
 }
@@ -109,17 +110,18 @@ func ReadGOFile(gofile string) (DB []Table) {
 						colume := Colume{
 							Name: strings.ToLower(aA_Compile.ReplaceAllString(list.Names[0].Name, "${1}_${2}")),
 						}
-						tag := strings.Replace(list.Tag.Value, "`", "", -1)
-						if s := reflect.StructTag(tag).Get("mysql"); s != "" {
+
+						colume.Tag = strings.Replace(list.Tag.Value, "`", "", -1)
+						if tag := reflect.StructTag(colume.Tag).Get("mysql"); tag != "" {
 							// e.g.: 	id         uint16    `mysql:"SMALLINT,NOT_NULL,AUTO_INCREMENT,PRIMARY_KEY"`
 							// Todo: define the sql with golang type not in the tag, like django. e.g.: if `id` is uint16,
 							//  so the will be `smallint` in mysql, no need to add it in tag
-							if strings.Contains(s, "PRIMARY_KEY") {
+							if strings.Contains(tag, "PRIMARY_KEY") {
 								colume.PrimaryKey = true
-								s = strings.Replace(s, ",PRIMARY_KEY", "", -1)
+								tag = strings.Replace(tag, ",PRIMARY_KEY", "", -1)
 							}
-							s = strings.Replace(s, "_", " ", -1)
-							colume.Mysql = strings.Replace(s, ",", " ", -1)
+							tag = strings.Replace(tag, "_", " ", -1)
+							colume.Mysql = strings.Replace(tag, ",", " ", -1)
 						}
 						// Todo: not only mysql
 						table.Colume = append(table.Colume, colume)
